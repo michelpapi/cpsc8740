@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculator</title>
+    <style>
+        .calculator {
+            width: 300px;
+            margin: 50px auto;
+            border: 2px solid #333;
+            border-radius: 10px;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+
+        #display {
+            width: 100%;
+            height: 60px;
+            margin-bottom: 20px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 24px;
+            text-align: right;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        button {
+            padding: 15px;
+            font-size: 18px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #e0e0e0;
+        }
+
+        button:hover {
+            background-color: #d0d0d0;
+        }
+
+        .operator {
+            background-color: #ff9500;
+            color: white;
+        }
+
+        .operator:hover {
+            background-color: #e08500;
+        }
+
+        .clear {
+            background-color: #ff3b30;
+            color: white;
+            grid-column: span 2;
+        }
+
+        .clear:hover {
+            background-color: #e02a20;
+        }
+
+        .equals {
+            background-color: #34c759;
+            color: white;
+            grid-row: span 2;
+        }
+
+        .equals:hover {
+            background-color: #2cad4a;
+        }
+    </style>
+</head>
+<body>
+<div class="calculator">
+    <div id="display">0</div>
+    <div class="buttons">
+        <button class="clear" data-action="clear">AC</button>
+        <button class="operator" data-action="divide">÷</button>
+        <button class="operator" data-action="multiply">×</button>
+        <button data-action="7">7</button>
+        <button data-action="8">8</button>
+        <button data-action="9">9</button>
+        <button class="operator" data-action="subtract">-</button>
+        <button data-action="4">4</button>
+        <button data-action="5">5</button>
+        <button data-action="6">6</button>
+        <button class="operator" data-action="add">+</button>
+        <button data-action="1">1</button>
+        <button data-action="2">2</button>
+        <button data-action="3">3</button>
+        <button class="equals" data-action="equals">=</button>
+        <button data-action="0" style="grid-column: span 2;">0</button>
+        <button data-action="decimal">.</button>
+    </div>
+</div>
+
+<script>
+    const display = document.getElementById('display');
+    let displayValue = '0';
+    let firstOperand = null;
+    let operator = null;
+    let waitingForSecondOperand = false;
+
+    const performCalculation = {
+        'add': (first, second) => first + second,
+        'subtract': (first, second) => first - second,
+        'multiply': (first, second) => first * second,
+        'divide': (first, second) => {
+            if (second === 0) return 'Error';
+            return first / second;
+        }
+    };
+
+
+    function updateDisplay() {
+        display.textContent = displayValue;
+    }
+
+    function inputDigit(digit) {
+        if (waitingForSecondOperand) {
+            displayValue = digit;
+            waitingForSecondOperand = false;
+        } else {
+            displayValue = displayValue === '0' ? digit : displayValue + digit;
+        }
+    }
+
+    function inputDecimal() {
+        if (waitingForSecondOperand) {
+            displayValue = '0.';
+            waitingForSecondOperand = false;
+            return;
+        }
+        if (!displayValue.includes('.')) {
+            displayValue += '.';
+        }
+    }
+
+    function handleOperator(nextOperator) {
+        const input = parseFloat(displayValue);
+
+        if (operator && waitingForSecondOperand) {
+            operator = nextOperator;
+            return;
+        }
+
+        if (firstOperand === null) {
+            firstOperand = input;
+        } else if (operator) {
+            const result = performCalculation[operator](firstOperand, input);
+            displayValue = `${parseFloat(result.toFixed(7))}`;
+            firstOperand = result;
+
+            if (displayValue === 'Error') {
+                resetCalculator();
+                return;
+            }
+        }
+
+        operator = nextOperator;
+        waitingForSecondOperand = true;
+        updateDisplay();
+    }
+
+
+    function handleEquals() {
+        if (operator === null || waitingForSecondOperand) return;
+
+        const input = parseFloat(displayValue);
+        const result = performCalculation[operator](firstOperand, input);
+
+        displayValue = `${parseFloat(result.toFixed(7))}`;
+        if (displayValue === 'Error') {
+            resetCalculator();
+            return;
+        }
+
+        firstOperand = null;
+        operator = null;
+        waitingForSecondOperand = false;
+        updateDisplay();
+    }
+
+    function resetCalculator() {
+        displayValue = '0';
+        firstOperand = null;
+        operator = null;
+        waitingForSecondOperand = false;
+        updateDisplay();
+    }
+
+    document.querySelector('.calculator').addEventListener('click', (event) => {
+        if (!event.target.matches('button')) return;
+
+        const action = event.target.dataset.action;
+
+        switch (action) {
+            case 'clear':
+                resetCalculator();
+                break;
+            case 'decimal':
+                inputDecimal();
+                break;
+            case 'equals':
+                handleEquals();
+                break;
+            case 'add':
+            case 'subtract':
+            case 'multiply':
+            case 'divide':
+                handleOperator(action);
+                break;
+            default:
+                if (Number.isInteger(Number(action))) {
+                    inputDigit(action);
+                }
+                break;
+        }
+
+        updateDisplay();
+    });
+</script>
+</body>
+</html>
